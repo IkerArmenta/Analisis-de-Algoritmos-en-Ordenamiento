@@ -1,0 +1,128 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <cstdlib>
+#include <chrono>
+using namespace std;
+
+// Algoritmos de ordenamiento adaptados
+void insercionOrdenada(int arreglo[], int cantidad) {
+    for (int indice = 1; indice < cantidad; ++indice) {
+        int temporal = arreglo[indice];
+        int posicion = indice - 1;
+        while (posicion >= 0 && arreglo[posicion] > temporal) {
+            arreglo[posicion + 1] = arreglo[posicion];
+            --posicion;
+        }
+        arreglo[posicion + 1] = temporal;
+    }
+}
+
+void burbujaOrdenada(int arreglo[], int cantidad) {
+    for (int paso = 0; paso < cantidad - 1; ++paso) {
+        for (int posicion = 0; posicion < cantidad - paso - 1; ++posicion) {
+            if (arreglo[posicion] > arreglo[posicion + 1]) {
+                swap(arreglo[posicion], arreglo[posicion + 1]);
+            }
+        }
+    }
+}
+
+void seleccionOrdenada(int arreglo[], int cantidad) {
+    for (int inicio = 0; inicio < cantidad - 1; ++inicio) {
+        int menor = inicio;
+        for (int siguiente = inicio + 1; siguiente < cantidad; ++siguiente) {
+            if (arreglo[siguiente] < arreglo[menor]) {
+                menor = siguiente;
+            }
+        }
+        if (menor != inicio) {
+            swap(arreglo[inicio], arreglo[menor]);
+        }
+    }
+}
+
+void shellOrdenado(int arreglo[], int cantidad) {
+    for (int salto = cantidad / 2; salto > 0; salto /= 2) {
+        for (int indice = salto; indice < cantidad; ++indice) {
+            int temporal = arreglo[indice];
+            int j = indice;
+            while (j >= salto && arreglo[j - salto] > temporal) {
+                arreglo[j] = arreglo[j - salto];
+                j -= salto;
+            }
+            arreglo[j] = temporal;
+        }
+    }
+}
+
+void mezcla(int arreglo[], int inicio, int medio, int final) {
+    int tamIzq = medio - inicio + 1;
+    int tamDer = final - medio;
+    int izquierda[tamIzq], derecha[tamDer];
+
+    for (int i = 0; i < tamIzq; ++i) izquierda[i] = arreglo[inicio + i];
+    for (int j = 0; j < tamDer; ++j) derecha[j] = arreglo[medio + 1 + j];
+
+    int i = 0, j = 0, k = inicio;
+    while (i < tamIzq && j < tamDer) {
+        if (izquierda[i] <= derecha[j]) arreglo[k++] = izquierda[i++];
+        else arreglo[k++] = derecha[j++];
+    }
+    while (i < tamIzq) arreglo[k++] = izquierda[i++];
+    while (j < tamDer) arreglo[k++] = derecha[j++];
+}
+
+void mezclaOrdenada(int arreglo[], int inicio, int final) {
+    if (inicio < final) {
+        int medio = inicio + (final - inicio) / 2;
+        mezclaOrdenada(arreglo, inicio, medio);
+        mezclaOrdenada(arreglo, medio + 1, final);
+        mezcla(arreglo, inicio, medio, final);
+    }
+}
+
+void mezclaWrapper(int arreglo[], int cantidad) {
+    mezclaOrdenada(arreglo, 0, cantidad - 1);
+}
+
+void medirDesempeno(void (*ordenamiento)(int[], int), const string &archivoSalida) {
+    const int TOTAL_PRUEBAS = 1000;
+    const int TAMANO_ARREGLO = 100;
+    vector<double> tiempos(TOTAL_PRUEBAS);
+    srand(static_cast<unsigned>(time(0)));
+
+    for (int prueba = 0; prueba < TOTAL_PRUEBAS; ++prueba) {
+        int datos[TAMANO_ARREGLO];
+        for (int i = 0; i < TAMANO_ARREGLO; ++i) {
+            datos[i] = rand() % 1000 + 1;
+        }
+
+        auto inicio = chrono::high_resolution_clock::now();
+        ordenamiento(datos, TAMANO_ARREGLO);
+        auto fin = chrono::high_resolution_clock::now();
+
+        tiempos[prueba] = chrono::duration_cast<chrono::nanoseconds>(fin - inicio).count();
+    }
+
+    ofstream salida(archivoSalida);
+    if (salida.is_open()) {
+        for (const auto &tiempo : tiempos) {
+            salida << tiempo << endl;
+        }
+        salida.close();
+        cout << "Resultados almacenados en " << archivoSalida << endl;
+    } else {
+        cout << "No se pudo guardar el archivo de resultados: " << archivoSalida << endl;
+    }
+}
+
+int main() {
+    medirDesempeno(insercionOrdenada, "resultado_insercion.csv");
+    medirDesempeno(burbujaOrdenada, "resultado_burbuja.csv");
+    medirDesempeno(seleccionOrdenada, "resultado_seleccion.csv");
+    medirDesempeno(shellOrdenado, "resultado_shell.csv");
+    medirDesempeno(mezclaWrapper, "resultado_mezcla.csv");
+
+    return 0;
+}
